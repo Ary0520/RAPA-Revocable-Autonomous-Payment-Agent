@@ -47,7 +47,7 @@ export function Header() {
                 RAPA
               </div>
               <div style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: '1px' }}>
-                Protocol
+                Network
               </div>
             </div>
           </div>
