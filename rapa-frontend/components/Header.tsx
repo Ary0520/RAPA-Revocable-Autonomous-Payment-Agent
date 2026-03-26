@@ -10,7 +10,7 @@ export function Header() {
     { label: 'Dashboard', href: '#dashboard' },
     { label: 'Agents', href: '#agents' },
     { label: 'Docs', href: '#docs' },
-    { label: 'GitHub', href: 'https://github.com/your-repo/rapa', external: true },
+    { label: 'GitHub', href: 'https://github.com/Ary0520/RAPA-Revocable-Autonomous-Payment-Agent', external: true },
   ];
 
   return (
