@@ -5,14 +5,56 @@ import { createAgent, storeUserAgent } from '@/lib/stellar';
 import { useAccount } from '@/hooks';
 import { ConnectButton } from './ConnectButton';
 
+const INTERVAL_OPTIONS = [
+  { value: '0.033', label: '2 Minutes', tag: 'Testing' },
+  { value: '0.083', label: '5 Minutes', tag: 'Testing' },
+  { value: '0.5',   label: '30 Minutes', tag: null },
+  { value: '1',     label: '1 Hour', tag: null },
+  { value: '6',     label: '6 Hours', tag: null },
+  { value: '12',    label: '12 Hours', tag: null },
+  { value: '24',    label: '24 Hours', tag: null },
+  { value: '168',   label: '1 Week', tag: null },
+  { value: '720',   label: '1 Month', tag: null },
+];
+
+const EXPIRY_OPTIONS = [
+  { value: '1',   label: '1 Day' },
+  { value: '7',   label: '7 Days' },
+  { value: '30',  label: '30 Days' },
+  { value: '90',  label: '90 Days' },
+  { value: '365', label: '1 Year' },
+];
+
+function FormField({
+  label, hint, children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', letterSpacing: '0.01em' }}>
+        {label}
+      </label>
+      {children}
+      {hint && (
+        <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function CreateAgent() {
   const { account, isConnected } = useAccount();
   const [formData, setFormData] = useState({
     recipient: '',
     maxAmount: '',
-    intervalHours: '0.033', // Default to 2 minutes for testing
+    intervalHours: '0.033',
     expiryDays: '30',
-    fundingAmount: '' // Add funding amount field
+    fundingAmount: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,21 +67,15 @@ export function CreateAgent() {
     setSuccess('');
 
     try {
-      // Check wallet connection
-      if (!isConnected || !account) {
-        throw new Error('Please connect your wallet first');
-      }
-
-      if (!formData.recipient || !formData.maxAmount || !formData.fundingAmount) {
+      if (!isConnected || !account) throw new Error('Please connect your wallet first');
+      if (!formData.recipient || !formData.maxAmount || !formData.fundingAmount)
         throw new Error('Please fill in all required fields');
-      }
 
-      const maxAmountStroops = Math.floor(parseFloat(formData.maxAmount) * 10_000_000);
-      const fundingAmountStroops = Math.floor(parseFloat(formData.fundingAmount) * 10_000_000);
-      const intervalSeconds = Math.floor(parseFloat(formData.intervalHours) * 3600);
-      const expiryTimestamp = Date.now() + (parseInt(formData.expiryDays) * 24 * 3600 * 1000);
+      const maxAmountStroops      = Math.floor(parseFloat(formData.maxAmount) * 10_000_000);
+      const fundingAmountStroops  = Math.floor(parseFloat(formData.fundingAmount) * 10_000_000);
+      const intervalSeconds       = Math.floor(parseFloat(formData.intervalHours) * 3600);
+      const expiryTimestamp       = Date.now() + (parseInt(formData.expiryDays) * 24 * 3600 * 1000);
 
-      // Debug logging
       console.log('Agent Parameters:', {
         recipient: formData.recipient,
         maxAmountXLM: formData.maxAmount,
@@ -49,7 +85,7 @@ export function CreateAgent() {
         intervalHours: formData.intervalHours,
         intervalSeconds,
         expiryDays: formData.expiryDays,
-        expiryTimestamp: Math.floor(expiryTimestamp / 1000)
+        expiryTimestamp: Math.floor(expiryTimestamp / 1000),
       });
 
       const result = await createAgent({
@@ -57,27 +93,18 @@ export function CreateAgent() {
         maxAmount: maxAmountStroops,
         intervalSeconds,
         expiryTimestamp: Math.floor(expiryTimestamp / 1000),
-        fundingAmount: fundingAmountStroops
+        fundingAmount: fundingAmountStroops,
       });
 
-      // Store the agent in localStorage for the user
       storeUserAgent(result.contractId, {
         recipient: formData.recipient,
         maxAmount: maxAmountStroops,
         intervalSeconds,
-        expiryTimestamp: Math.floor(expiryTimestamp / 1000)
+        expiryTimestamp: Math.floor(expiryTimestamp / 1000),
       });
 
-      setSuccess(`Agent deployed and funded successfully! Contract: ${result.contractId.slice(0, 8)}... Funded with ${formData.fundingAmount} XLM`);
-      
-      setFormData({
-        recipient: '',
-        maxAmount: '',
-        intervalHours: '0.033', // Reset to 2 minutes for testing
-        expiryDays: '30',
-        fundingAmount: ''
-      });
-
+      setSuccess(`Agent deployed successfully. Contract: ${result.contractId.slice(0, 12)}... — Funded with ${formData.fundingAmount} XLM`);
+      setFormData({ recipient: '', maxAmount: '', intervalHours: '0.033', expiryDays: '30', fundingAmount: '' });
     } catch (err: any) {
       setError(err.message || 'Failed to create agent');
     } finally {
@@ -86,35 +113,53 @@ export function CreateAgent() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // Show wallet connection prompt if not connected
+  const estimatedPayments =
+    formData.maxAmount && formData.fundingAmount
+      ? Math.floor(parseFloat(formData.fundingAmount) / parseFloat(formData.maxAmount))
+      : null;
+
+  // ── Wallet not connected ──────────────────────────────────────────
   if (!isConnected || !account) {
     return (
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🔗</div>
-        <div className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+      <div style={{ padding: '40px 0', textAlign: 'center' }}>
+        <div style={{
+          width: '52px', height: '52px',
+          borderRadius: 'var(--r-lg)',
+          background: 'rgba(77,158,255,0.08)',
+          border: '1px solid rgba(77,158,255,0.15)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 20px',
+          color: 'var(--accent-blue)',
+        }}>
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 7H3a2 2 0 00-2 2v8a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
+            <path d="M16 11h.01"/>
+            <path d="M1 7l4-4 4 4M17 7l4-4-4-4"/>
+          </svg>
+        </div>
+        <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
           Connect Your Wallet
         </div>
-        <div className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-          Connect your Stellar wallet to deploy autonomous payment agents.
+        <div style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '28px', maxWidth: '320px', margin: '0 auto 28px', lineHeight: 1.6 }}>
+          Connect your Stellar wallet to deploy autonomous payment agents on-chain.
         </div>
         <ConnectButton label="Connect Wallet" />
-        <div className="mt-6 p-4 rounded-xl" style={{ 
-          background: 'rgba(0, 212, 255, 0.1)',
-          border: '1px solid rgba(0, 212, 255, 0.2)'
-        }}>
-          <div className="text-sm">
-            <div className="font-semibold mb-1" style={{ color: 'var(--accent-primary)' }}>
-              Supported Wallets
+
+        <div className="alert-info" style={{ marginTop: '24px', textAlign: 'left', maxWidth: '340px', margin: '24px auto 0' }}>
+          <div style={{ fontWeight: 600, fontSize: '12.5px', color: 'var(--accent-blue)', marginBottom: '6px' }}>
+            Supported Wallets
+          </div>
+          <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="var(--accent-blue)"><circle cx="5" cy="5" r="2"/></svg>
+              Freighter (Browser Extension)
             </div>
-            <div style={{ color: 'var(--text-secondary)' }}>
-              • Freighter (Browser Extension)<br/>
-              • WalletConnect (Coming Soon)
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.5 }}>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="var(--text-muted)"><circle cx="5" cy="5" r="2"/></svg>
+              WalletConnect — Coming Soon
             </div>
           </div>
         </div>
@@ -122,61 +167,55 @@ export function CreateAgent() {
     );
   }
 
+  // ── Form ──────────────────────────────────────────────────────────
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit}>
+
+      {/* Alerts */}
       {error && (
-        <div className="p-4 rounded-xl border" style={{ 
-          background: 'rgba(255, 68, 68, 0.1)',
-          borderColor: 'var(--error)',
-          color: 'var(--error)'
-        }}>
-          <div className="flex items-center space-x-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <span className="font-medium">{error}</span>
-          </div>
+        <div className="alert-error" style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '20px' }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ flexShrink: 0, marginTop: '1px' }}>
+            <circle cx="8" cy="8" r="6.5"/>
+            <path d="M8 5v3.5M8 10.5v.5"/>
+          </svg>
+          <span style={{ fontSize: '13.5px' }}>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-xl border" style={{ 
-          background: 'rgba(0, 255, 136, 0.1)',
-          borderColor: 'var(--success)',
-          color: 'var(--success)'
-        }}>
-          <div className="flex items-center space-x-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <span className="font-medium">{success}</span>
-          </div>
+        <div className="alert-success" style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '20px' }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <circle cx="8" cy="8" r="6.5"/>
+            <path d="M5.5 8l2 2 3-3"/>
+          </svg>
+          <span style={{ fontSize: '13.5px' }}>{success}</span>
         </div>
       )}
 
-      {/* Connected Wallet Info */}
-      <div className="p-4 rounded-xl" style={{ 
-        background: 'rgba(0, 255, 136, 0.1)',
-        border: '1px solid rgba(0, 255, 136, 0.2)'
+      {/* Connected account banner */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '10px',
+        padding: '12px 14px',
+        borderRadius: 'var(--r-md)',
+        background: 'rgba(52,211,153,0.05)',
+        border: '1px solid rgba(52,211,153,0.15)',
+        marginBottom: '28px',
       }}>
-        <div className="flex items-center space-x-3">
-          <div className="w-3 h-3 rounded-full" style={{ background: 'var(--success)' }}></div>
-          <div>
-            <div className="font-semibold" style={{ color: 'var(--success)' }}>
-              Wallet Connected
-            </div>
-            <div className="text-sm font-mono" style={{ color: 'var(--text-secondary)' }}>
-              {account.displayName} ({account.walletType})
-            </div>
+        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent-green)', boxShadow: '0 0 6px var(--accent-green)', display: 'inline-block', animation: 'pulse-dot 2s infinite', flexShrink: 0 }} />
+        <div>
+          <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--accent-green)', marginBottom: '1px' }}>
+            Wallet Connected
+          </div>
+          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11.5px', color: 'var(--text-muted)' }}>
+            {account.displayName} · {account.walletType}
           </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="md:col-span-2">
-          <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-            Recipient Address *
-          </label>
+      {/* Form fields */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+
+        <FormField label="Recipient Address *" hint="Stellar address that will receive the automated payments">
           <input
             type="text"
             name="recipient"
@@ -184,168 +223,144 @@ export function CreateAgent() {
             onChange={handleChange}
             placeholder="GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
             className="input-field font-mono"
+            style={{ fontSize: '12.5px' }}
             required
           />
-          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-            Stellar address that will receive the automated payments
-          </p>
+        </FormField>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <FormField label="Max Per Payment (XLM) *" hint="Ceiling per individual payment">
+            <input
+              type="number"
+              name="maxAmount"
+              value={formData.maxAmount}
+              onChange={handleChange}
+              placeholder="100"
+              step="0.0000001"
+              min="0.0000001"
+              className="input-field"
+              required
+            />
+          </FormField>
+
+          <FormField label="Total Funding (XLM) *" hint="Total XLM deposited into the agent">
+            <input
+              type="number"
+              name="fundingAmount"
+              value={formData.fundingAmount}
+              onChange={handleChange}
+              placeholder="500"
+              step="0.0000001"
+              min="0.0000001"
+              className="input-field"
+              required
+            />
+          </FormField>
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-            Max Amount (XLM) *
-          </label>
-          <input
-            type="number"
-            name="maxAmount"
-            value={formData.maxAmount}
-            onChange={handleChange}
-            placeholder="100.0"
-            step="0.0000001"
-            min="0.0000001"
-            className="input-field"
-            required
-          />
-          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-            Maximum per payment
-          </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <FormField label="Payment Interval" hint="Minimum time between executions">
+            <select name="intervalHours" value={formData.intervalHours} onChange={handleChange} className="input-field">
+              {INTERVAL_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}{o.tag ? ` (${o.tag})` : ''}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          <FormField label="Agent Expiry" hint="Agent auto-terminates on this date">
+            <select name="expiryDays" value={formData.expiryDays} onChange={handleChange} className="input-field">
+              {EXPIRY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </FormField>
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-            Funding Amount (XLM) *
-          </label>
-          <input
-            type="number"
-            name="fundingAmount"
-            value={formData.fundingAmount}
-            onChange={handleChange}
-            placeholder="500.0"
-            step="0.0000001"
-            min="0.0000001"
-            className="input-field"
-            required
-          />
-          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-            Total XLM to fund the agent with (for multiple payments)
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-            Payment Interval
-          </label>
-          <select
-            name="intervalHours"
-            value={formData.intervalHours}
-            onChange={handleChange}
-            className="input-field"
-          >
-            <option value="0.033">2 Minutes (Testing)</option>
-            <option value="0.083">5 Minutes (Testing)</option>
-            <option value="0.5">30 Minutes</option>
-            <option value="1">1 Hour</option>
-            <option value="6">6 Hours</option>
-            <option value="12">12 Hours</option>
-            <option value="24">24 Hours</option>
-            <option value="168">1 Week</option>
-            <option value="720">1 Month</option>
-          </select>
-          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-            Minimum time between payments
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-            Agent Expiry
-          </label>
-          <select
-            name="expiryDays"
-            value={formData.expiryDays}
-            onChange={handleChange}
-            className="input-field"
-          >
-            <option value="1">1 Day</option>
-            <option value="7">7 Days</option>
-            <option value="30">30 Days</option>
-            <option value="90">90 Days</option>
-            <option value="365">1 Year</option>
-          </select>
-          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-            When agent expires automatically
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-            Cost Summary
-          </label>
-          <div className="p-4 rounded-xl" style={{ 
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-primary)'
-          }}>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Per payment:</span>
-                <span className="font-semibold text-gradient">
-                  {formData.maxAmount ? `${formData.maxAmount} XLM` : '0 XLM'}
-                </span>
+        {/* Cost summary */}
+        <div style={{
+          background: 'var(--bg-input)',
+          border: '1px solid var(--border-primary)',
+          borderRadius: 'var(--r-md)',
+          padding: '16px',
+        }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
+            Summary
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <SummaryRow label="Per payment" value={formData.maxAmount ? `${formData.maxAmount} XLM` : '—'} />
+            <SummaryRow label="Total funding" value={formData.fundingAmount ? `${formData.fundingAmount} XLM` : '—'} highlight />
+            {estimatedPayments !== null && (
+              <div style={{ marginTop: '8px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
+                <SummaryRow label="Est. payments" value={`${estimatedPayments} executions`} />
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Total funding:</span>
-                <span className="font-bold text-gradient text-lg">
-                  {formData.fundingAmount ? `${formData.fundingAmount} XLM` : '0 XLM'}
-                </span>
-              </div>
-              {formData.maxAmount && formData.fundingAmount && (
-                <div className="flex justify-between pt-2 border-t" style={{ borderColor: 'var(--border-primary)' }}>
-                  <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Estimated payments:</span>
-                  <span className="font-semibold">
-                    {Math.floor(parseFloat(formData.fundingAmount) / parseFloat(formData.maxAmount))} payments
-                  </span>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
-      </div>
 
-      <div className="pt-6 border-t" style={{ borderColor: 'var(--border-primary)' }}>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full btn-primary py-4 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed glow-hover"
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>Deploying Agent...</span>
-            </div>
-          ) : (
-            'Deploy Agent'
-          )}
-        </button>
-      </div>
-
-      <div className="p-4 rounded-xl" style={{ 
-        background: 'rgba(255, 170, 0, 0.1)',
-        border: '1px solid rgba(255, 170, 0, 0.2)'
-      }}>
-        <div className="flex items-start space-x-3">
-          <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--warning)' }} fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+        {/* Warning notice */}
+        <div className="alert-warning" style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }}>
+            <path d="M8 2l6 10H2L8 2z"/>
+            <path d="M8 6v3.5M8 11v.5"/>
           </svg>
           <div>
-            <div className="font-semibold mb-1" style={{ color: 'var(--warning)' }}>
-              Production Deployment
+            <div style={{ fontWeight: 600, fontSize: '12.5px', color: 'var(--accent-amber)', marginBottom: '4px' }}>
+              On-Chain Deployment
             </div>
-            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              This will create a real smart contract on Stellar Testnet using your connected {account.walletType} wallet. Ensure your wallet is funded and you understand the agent rules.
+            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              This creates a real Soroban contract on Stellar Testnet using your {account.walletType} wallet. Ensure your wallet is funded and you understand the agent parameters before deploying.
             </div>
           </div>
         </div>
+
+        {/* Submit */}
+        <div style={{ paddingTop: '4px' }}>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="btn-primary"
+            style={{ width: '100%', padding: '13px', fontSize: '14.5px', fontWeight: 700, justifyContent: 'center' }}
+          >
+            {isLoading ? (
+              <>
+                <div style={{
+                  width: '15px', height: '15px',
+                  border: '2px solid rgba(255,255,255,0.25)',
+                  borderTopColor: '#fff',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
+                Deploying Agent...
+              </>
+            ) : (
+              <>
+                Deploy Agent
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 7h12M8 2l5 5-5 5"/>
+                </svg>
+              </>
+            )}
+          </button>
+        </div>
+
       </div>
     </form>
+  );
+}
+
+function SummaryRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{
+        fontSize: highlight ? '15px' : '13px',
+        fontWeight: highlight ? 700 : 600,
+        color: highlight ? 'var(--text-primary)' : 'var(--text-secondary)',
+      }} className={highlight ? 'text-gradient' : ''}>
+        {value}
+      </span>
+    </div>
   );
 }

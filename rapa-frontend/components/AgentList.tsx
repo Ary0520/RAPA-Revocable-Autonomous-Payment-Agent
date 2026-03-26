@@ -18,6 +18,8 @@ interface Agent {
   totalPaid?: number;
 }
 
+const NATIVE_TOKEN = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
+
 export function AgentList() {
   const { account, isConnected } = useAccount();
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -26,60 +28,46 @@ export function AgentList() {
 
   useEffect(() => {
     const loadAgents = async () => {
-      if (!isConnected || !account) {
-        setIsLoading(false);
-        return;
-      }
+      if (!isConnected || !account) { setIsLoading(false); return; }
 
       try {
-        // Get stored agents from localStorage
         const storedAgents = getUserAgents();
+        if (storedAgents.length === 0) { setAgents([]); setIsLoading(false); return; }
 
-        if (storedAgents.length === 0) {
-          setAgents([]);
-          setIsLoading(false);
-          return;
-        }
-
-        // Fetch current state for each agent
         const agentPromises = storedAgents.map(async (stored: any) => {
           try {
             const state = await getDetailedAgentState(stored.contractId);
-
             return {
               contractId: stored.contractId,
               owner: account.publicKey,
               recipient: stored.recipient,
-              token: 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC', // Native token
+              token: NATIVE_TOKEN,
               maxAmount: stored.maxAmount,
               interval: stored.intervalSeconds,
               lastExecuted: state?.lastExecuted || 0,
               expiry: stored.expiryTimestamp,
               active: state?.active !== false,
-              totalExecutions: 0, // Could be fetched from contract events
-              totalPaid: 0 // Could be calculated from execution history
+              totalExecutions: 0,
+              totalPaid: 0,
             };
-          } catch (error) {
-            console.error(`Error loading agent ${stored.contractId}:`, error);
-            // Return agent with stored data even if blockchain fetch fails
+          } catch {
             return {
               contractId: stored.contractId,
               owner: account.publicKey,
               recipient: stored.recipient,
-              token: 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC',
+              token: NATIVE_TOKEN,
               maxAmount: stored.maxAmount,
               interval: stored.intervalSeconds,
               lastExecuted: 0,
               expiry: stored.expiryTimestamp,
-              active: true, // Assume active if we can't fetch state
+              active: true,
               totalExecutions: 0,
-              totalPaid: 0
+              totalPaid: 0,
             };
           }
         });
 
-        const loadedAgents = await Promise.all(agentPromises);
-        setAgents(loadedAgents);
+        setAgents(await Promise.all(agentPromises));
       } catch (err: any) {
         setError(err.message || 'Failed to load agents');
       } finally {
@@ -93,83 +81,81 @@ export function AgentList() {
   const handleRevoke = async (contractId: string) => {
     try {
       await revokeAgent(contractId);
-
-      // Remove the agent from the UI immediately
-      setAgents(prev => prev.filter(agent => agent.contractId !== contractId));
-
+      setAgents(prev => prev.filter(a => a.contractId !== contractId));
     } catch (err: any) {
       setError(`Failed to revoke agent: ${err.message}`);
     }
   };
 
-  const formatAmount = (stroops: number) => {
-    return (stroops / 10_000_000).toLocaleString();
-  };
-
-  const formatInterval = (seconds: number) => {
-    const hours = seconds / 3600;
-    if (hours < 24) return `${hours}h`;
-    const days = hours / 24;
-    return `${days}d`;
-  };
-
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString();
-  };
-
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-6)}`;
-  };
+  const formatAmount   = (s: number) => (s / 10_000_000).toLocaleString();
+  const formatInterval = (s: number) => { const h = s / 3600; return h < 24 ? `${h}h` : `${h / 24}d`; };
+  const formatDate     = (ts: number) => new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const formatAddress  = (a: string) => `${a.slice(0, 6)}...${a.slice(-6)}`;
 
   const getStatus = (agent: Agent) => {
-    if (!agent.active) return { text: 'Revoked', color: 'status-inactive' };
-    if (Date.now() / 1000 > agent.expiry) return { text: 'Expired', color: 'status-warning' };
-    return { text: 'Active', color: 'status-active' };
+    if (!agent.active) return { text: 'Revoked', cls: 'status-inactive' };
+    if (Date.now() / 1000 > agent.expiry) return { text: 'Expired', cls: 'status-warning' };
+    return { text: 'Active', cls: 'status-active' };
   };
 
   const getNextExecution = (agent: Agent) => {
     if (!agent.active) return 'Never';
-    const nextTime = agent.lastExecuted + agent.interval;
-    const now = Date.now() / 1000;
-
-    if (nextTime <= now) return 'Ready';
-
-    const diff = nextTime - now;
-    const hours = Math.floor(diff / 3600);
-    const minutes = Math.floor((diff % 3600) / 60);
-
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
+    const next = agent.lastExecuted + agent.interval;
+    const now  = Date.now() / 1000;
+    if (next <= now) return 'Ready';
+    const diff = next - now;
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
+  // ── Not connected ─────────────────────────────────────────────────
   if (!isConnected || !account) {
     return (
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🔗</div>
-        <div className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+      <div style={{ padding: '40px 0', textAlign: 'center' }}>
+        <div style={{
+          width: '52px', height: '52px',
+          borderRadius: 'var(--r-lg)',
+          background: 'rgba(77,158,255,0.08)',
+          border: '1px solid rgba(77,158,255,0.15)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 20px',
+          color: 'var(--accent-blue)',
+        }}>
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 7H3a2 2 0 00-2 2v8a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
+            <path d="M16 11h.01"/>
+          </svg>
+        </div>
+        <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
           Connect Your Wallet
         </div>
-        <div className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+        <div style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
           Connect your wallet to view your deployed agents.
         </div>
       </div>
     );
   }
 
+  // ── Loading skeleton ──────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="card animate-pulse">
-            <div className="flex items-center justify-between mb-4">
-              <div className="h-4 bg-gray-700 rounded w-24"></div>
-              <div className="h-6 bg-gray-700 rounded w-16"></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {[0, 1, 2].map((i) => (
+          <div key={i} style={{
+            padding: '20px',
+            borderRadius: 'var(--r-lg)',
+            border: '1px solid var(--border-subtle)',
+            background: 'var(--bg-input)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div className="skeleton" style={{ width: '80px', height: '20px' }} />
+              <div className="skeleton" style={{ width: '60px', height: '20px' }} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="h-3 bg-gray-700 rounded"></div>
-              <div className="h-3 bg-gray-700 rounded"></div>
-              <div className="h-3 bg-gray-700 rounded"></div>
-              <div className="h-3 bg-gray-700 rounded"></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
+              {[0, 1, 2, 3].map((j) => (
+                <div key={j} className="skeleton" style={{ height: '32px' }} />
+              ))}
             </div>
           </div>
         ))}
@@ -177,36 +163,49 @@ export function AgentList() {
     );
   }
 
+  // ── Error ─────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="p-6 rounded-xl border text-center" style={{
-        background: 'rgba(255, 68, 68, 0.1)',
-        borderColor: 'var(--error)',
-        color: 'var(--error)'
-      }}>
-        <svg className="w-12 h-12 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+      <div className="alert-error" style={{ textAlign: 'center', padding: '28px 20px' }}>
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ margin: '0 auto 12px', display: 'block' }}>
+          <circle cx="16" cy="16" r="13"/>
+          <path d="M16 10v7M16 20v1.5"/>
         </svg>
-        <div className="font-semibold mb-2">Error Loading Agents</div>
-        <div className="text-sm">{error}</div>
+        <div style={{ fontWeight: 600, marginBottom: '4px' }}>Error Loading Agents</div>
+        <div style={{ fontSize: '13px', opacity: 0.8 }}>{error}</div>
       </div>
     );
   }
 
+  // ── Empty state ───────────────────────────────────────────────────
   if (agents.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🤖</div>
-        <div className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+      <div style={{ padding: '48px 0', textAlign: 'center' }}>
+        <div style={{
+          width: '56px', height: '56px',
+          borderRadius: 'var(--r-lg)',
+          background: 'rgba(129,140,248,0.08)',
+          border: '1px dashed rgba(129,140,248,0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 20px',
+          color: 'var(--accent-indigo)',
+        }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/>
+            <path d="M12 8v4l3 3"/>
+            <path d="M2 12h2M20 12h2M12 2v2M12 20v2"/>
+          </svg>
+        </div>
+        <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
           No Agents Deployed
         </div>
-        <div className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+        <div style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
           Create your first autonomous payment agent to get started.
         </div>
         <button
-          className="btn-primary px-6 py-3"
+          className="btn-primary"
+          style={{ padding: '10px 22px' }}
           onClick={() => {
-            // Switch to create tab
             const createTab = document.querySelector('[data-tab="create"]') as HTMLButtonElement;
             createTab?.click();
           }}
@@ -217,121 +216,152 @@ export function AgentList() {
     );
   }
 
+  // ── Agent list ────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {agents.map((agent, index) => {
         const status = getStatus(agent);
         const nextExecution = getNextExecution(agent);
 
         return (
-          <div key={`agent-${index}-${agent.contractId || 'unknown'}`} className="card hover:glow transition-all duration-300">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <div className={status.color}>
-                  {status.text}
-                </div>
-                <div className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+          <div
+            key={`agent-${index}-${agent.contractId}`}
+            style={{
+              border: '1px solid var(--border-primary)',
+              borderRadius: 'var(--r-lg)',
+              background: 'var(--bg-input)',
+              overflow: 'hidden',
+              transition: 'border-color 0.2s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-active)'}
+            onMouseLeave={(e) => (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-primary)'}
+          >
+            {/* Card header */}
+            <div style={{
+              padding: '16px 18px',
+              borderBottom: '1px solid var(--border-subtle)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span className={status.cls}>{status.text}</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11.5px', color: 'var(--text-muted)' }}>
                   {formatAddress(agent.contractId)}
-                </div>
+                </span>
               </div>
-
               {agent.active && (
                 <button
                   onClick={() => handleRevoke(agent.contractId)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  style={{
-                    background: 'rgba(255, 68, 68, 0.1)',
-                    border: '1px solid rgba(255, 68, 68, 0.2)',
-                    color: 'var(--error)'
-                  }}
+                  className="btn-danger"
+                  style={{ padding: '6px 14px', fontSize: '12.5px' }}
                 >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M2 2l8 8M10 2L2 10"/>
+                  </svg>
                   Revoke
                 </button>
               )}
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div>
-                <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Max Amount</div>
-                <div className="font-semibold text-gradient">
-                  {formatAmount(agent.maxAmount)} XLM
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Interval</div>
-                <div className="font-semibold">{formatInterval(agent.interval)}</div>
-              </div>
-
-              <div>
-                <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Next Payment</div>
-                <div className="font-semibold" style={{
-                  color: nextExecution === 'Ready' ? 'var(--success)' : 'var(--text-primary)'
-                }}>
-                  {nextExecution}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Expires</div>
-                <div className="font-semibold">{formatDate(agent.expiry)}</div>
-              </div>
+            {/* Stats row */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+              padding: '16px 18px',
+              gap: '12px',
+              borderBottom: '1px solid var(--border-subtle)',
+            }}>
+              <StatCell label="Max Amount" value={`${formatAmount(agent.maxAmount)} XLM`} accent />
+              <StatCell label="Interval" value={formatInterval(agent.interval)} />
+              <StatCell
+                label="Next Payment"
+                value={nextExecution}
+                valueColor={nextExecution === 'Ready' ? 'var(--accent-green)' : 'var(--text-primary)'}
+              />
+              <StatCell label="Expires" value={formatDate(agent.expiry)} />
             </div>
 
             {/* Details */}
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span style={{ color: 'var(--text-muted)' }}>Recipient:</span>
-                <span className="font-mono">{formatAddress(agent.recipient)}</span>
-              </div>
-
-              {agent.totalExecutions && (
-                <div className="flex justify-between">
-                  <span style={{ color: 'var(--text-muted)' }}>Total Executions:</span>
-                  <span className="font-semibold">{agent.totalExecutions}</span>
-                </div>
+            <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <DetailRow label="Recipient" value={formatAddress(agent.recipient)} mono />
+              {!!agent.totalExecutions && (
+                <DetailRow label="Total Executions" value={String(agent.totalExecutions)} />
               )}
-
-              {agent.totalPaid && (
-                <div className="flex justify-between">
-                  <span style={{ color: 'var(--text-muted)' }}>Total Paid:</span>
-                  <span className="font-semibold text-gradient">
-                    {formatAmount(agent.totalPaid)} XLM
-                  </span>
-                </div>
+              {!!agent.totalPaid && (
+                <DetailRow label="Total Paid" value={`${formatAmount(agent.totalPaid)} XLM`} accent />
               )}
-
-              <div className="flex justify-between">
-                <span style={{ color: 'var(--text-muted)' }}>Last Execution:</span>
-                <span>
-                  {agent.lastExecuted === 0
-                    ? 'Never'
-                    : new Date(agent.lastExecuted * 1000).toLocaleString()
-                  }
-                </span>
-              </div>
+              <DetailRow
+                label="Last Execution"
+                value={agent.lastExecuted === 0 ? 'Never' : new Date(agent.lastExecuted * 1000).toLocaleString()}
+              />
             </div>
 
-            {/* Actions */}
-            <div className="flex space-x-3 mt-6 pt-4 border-t" style={{ borderColor: 'var(--border-primary)' }}>
+            {/* Action buttons */}
+            <div style={{
+              padding: '12px 18px',
+              borderTop: '1px solid var(--border-subtle)',
+              display: 'flex', gap: '10px',
+            }}>
               <button
+                className="btn-secondary"
+                style={{ flex: 1, padding: '8px', fontSize: '12.5px', justifyContent: 'center' }}
                 onClick={() => window.open(`https://stellar.expert/explorer/testnet/contract/${agent.contractId}`, '_blank')}
-                className="btn-secondary flex-1 py-2 text-sm"
               >
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4.5 2H2a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V8.5"/>
+                  <path d="M7 1h5v5"/>
+                  <path d="M12 1L5.5 7.5"/>
+                </svg>
                 View Contract
               </button>
               <button
+                className="btn-secondary"
+                style={{ flex: 1, padding: '8px', fontSize: '12.5px', justifyContent: 'center' }}
                 onClick={() => window.open(`https://stellar.expert/explorer/testnet/account/${agent.recipient}`, '_blank')}
-                className="btn-secondary flex-1 py-2 text-sm"
               >
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="6.5" cy="4.5" r="2.5"/>
+                  <path d="M1 11.5c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4"/>
+                </svg>
                 View Recipient
               </button>
             </div>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function StatCell({ label, value, accent, valueColor }: { label: string; value: string; accent?: boolean; valueColor?: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '5px' }}>
+        {label}
+      </div>
+      <div
+        style={{ fontSize: '14px', fontWeight: 700, color: valueColor || 'var(--text-primary)' }}
+        className={accent ? 'text-gradient' : ''}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value, mono, accent }: { label: string; value: string; mono?: boolean; accent?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{label}</span>
+      <span
+        style={{
+          fontSize: '12.5px',
+          fontWeight: 600,
+          color: 'var(--text-secondary)',
+          fontFamily: mono ? 'JetBrains Mono, monospace' : 'inherit',
+        }}
+        className={accent ? 'text-gradient' : ''}
+      >
+        {value}
+      </span>
     </div>
   );
 }

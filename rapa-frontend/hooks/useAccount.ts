@@ -3,7 +3,8 @@ import {
   isConnected as checkFreighterInstalled,
   requestAccess,
   getAddress,
-  isAllowed
+  isAllowed,
+  setAllowed
 } from '@stellar/freighter-api';
 
 interface AccountData {
@@ -19,8 +20,17 @@ export function useAccount() {
 
   useEffect(() => {
     // Check if Freighter is installed
-    checkFreighterInstalled().then((res) => setIsFreighterInstalled(res.isConnected));
+    const checkIsInstalled = async () => {
+      let res = await checkFreighterInstalled();
+      if (!res.isConnected) {
+        // Wait and retry once since extensions might take a moment to inject
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        res = await checkFreighterInstalled();
+      }
+      setIsFreighterInstalled(res.isConnected);
+    };
 
+    checkIsInstalled();
     checkConnection();
   }, []);
 
@@ -73,6 +83,15 @@ export function useAccount() {
         throw new Error('Freighter wallet not installed');
       }
 
+      // First set allowed (this prompts the user)
+      const allowedStatus = await isAllowed();
+      if (!allowedStatus.isAllowed) {
+        const { error: setAllowedError } = await setAllowed();
+        if (setAllowedError) {
+          throw new Error(setAllowedError.toString());
+        }
+      }
+
       const response = await requestAccess();
 
       if (response.error) {
@@ -80,6 +99,10 @@ export function useAccount() {
       }
 
       const publicKey = response.address;
+
+      if (!publicKey) {
+         throw new Error('Failed to retrieve public key');
+      }
 
       const accountData: AccountData = {
         displayName: formatAddress(publicKey),
