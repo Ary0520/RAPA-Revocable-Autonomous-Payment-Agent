@@ -211,7 +211,7 @@ export function Dashboard() {
                     Active Agents
                   </h3>
                   <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-                    Monitor and control your deployed payment agents in real time.
+                    Monitor, review, and control your deployed payment agents in real time.
                   </p>
                 </div>
                 <AgentList />
