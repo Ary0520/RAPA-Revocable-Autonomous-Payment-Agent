@@ -1,6 +1,8 @@
-# 🚀 RAPA - Automated Payment Agent System
+<img width="1919" height="906" alt="image" src="https://github.com/user-attachments/assets/e76cb733-bdb9-4f02-a013-7650a4c726d6" /># 🚀 RAPA - Automated Payment Agent System
 
 A decentralized platform for creating autonomous payment agents on Stellar blockchain.
+
+![image](https://github.com/user-attachments/assets/829d7642-f278-4f13-9e87-8e217628eff6)
 
 ## 📁 Project Structure
 
