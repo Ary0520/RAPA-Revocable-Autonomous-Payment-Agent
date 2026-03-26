@@ -184,10 +184,10 @@ export function Hero() {
             transition: 'all 0.6s cubic-bezier(0.16,1,0.3,1) 0.16s',
           }}
         >
-          RAPA lets you create rule-based agents on Stellar that execute payments autonomously —
+          RAPA empowers you to deploy rule-based agents on Stellar that execute payments autonomously —
           enforced entirely by{' '}
           <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Soroban smart contracts</span>,
-          revocable at any moment.
+          fully revocable at any moment.
         </p>
 
         {/* CTA Buttons */}
