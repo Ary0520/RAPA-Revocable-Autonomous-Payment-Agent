@@ -200,7 +200,7 @@ export function AgentList() {
           No Agents Deployed
         </div>
         <div style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
-          Create your first autonomous payment agent to get started.
+          Deploy your first autonomous payment agent to get started.
         </div>
         <button
           className="btn-primary"
