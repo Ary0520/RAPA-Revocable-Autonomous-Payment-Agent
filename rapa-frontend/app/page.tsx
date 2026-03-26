@@ -83,7 +83,7 @@ export default function Home() {
           Revocable Autonomous Payment Agents on Stellar · Testnet
         </div>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-          Powered by Soroban Smart Contracts
+          Built with Soroban Smart Contracts on Stellar
         </div>
       </footer>
     </div>
