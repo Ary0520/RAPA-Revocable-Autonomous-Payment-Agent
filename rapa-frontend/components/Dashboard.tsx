@@ -125,7 +125,7 @@ export function Dashboard() {
             color: 'var(--text-primary)',
             marginBottom: '14px',
           }}>
-            Deploy &amp; Manage Your Agents
+            Deploy &amp; Manage Your Payment Agents
           </h2>
           <p style={{
             fontSize: '15.5px',
