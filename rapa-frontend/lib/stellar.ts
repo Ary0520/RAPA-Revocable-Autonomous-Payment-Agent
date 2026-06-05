@@ -13,11 +13,35 @@ import {
 import { signTransaction as signFreighterTransaction } from '@stellar/freighter-api';
 import { registerAgent } from './agent-registry';
 
-// Configuration
-const RPC_URL = 'https://soroban-testnet.stellar.org';
-const NETWORK_PASSPHRASE = Networks.TESTNET;
-const WASM_HASH = '1c209fac1a53075bbcb793fe7004109c481981aa98174661d7840ffad6076bed'; // WASM hash from deployment
-const NATIVE_TOKEN_CONTRACT_ID = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
+// ── Network Configuration ────────────────────────────────────────────────────
+// Switch NETWORK to 'mainnet' and fill in the IDs after running deploy.sh
+const NETWORK: 'testnet' | 'mainnet' = 'testnet';
+
+const RPC_URL =
+  NETWORK === 'mainnet'
+    ? 'https://mainnet.sorobanrpc.com'
+    : 'https://soroban-testnet.stellar.org';
+
+const NETWORK_PASSPHRASE =
+  NETWORK === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET;
+
+// rapa-agent WASM hash — shared across all agent instances
+const WASM_HASH = '1c209fac1a53075bbcb793fe7004109c481981aa98174661d7840ffad6076bed';
+
+// rapa-registry singleton — tracks all deployed agent contract IDs on-chain
+// Fill in after deploying with deploy.sh
+const REGISTRY_CONTRACT_ID = '';   // e.g. 'CXXX...'
+
+// rapa-config singleton — protocol-level config (wasm hash, min interval, cap)
+// Fill in after deploying with deploy.sh
+const CONFIG_CONTRACT_ID = '';     // e.g. 'CYYY...'
+
+// Native XLM Stellar Asset Contract
+const NATIVE_TOKEN_CONTRACT_ID =
+  NETWORK === 'mainnet'
+    ? 'CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA'
+    : 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
+// ─────────────────────────────────────────────────────────────────────────────
 
 const server = new rpc.Server(RPC_URL);
 
@@ -274,6 +298,40 @@ export async function createAgent(params: {
     throw new Error(`Contract funding failed: ${JSON.stringify(fundResponse)}`);
   }
 
+  // ── Step 4: Register agent in on-chain rapa-registry (if deployed) ──────────
+  if (REGISTRY_CONTRACT_ID) {
+    try {
+      const account4Seq = (BigInt(currentSequence) + BigInt(1)).toString();
+      const account4 = new Account(publicKey, account4Seq);
+      const registryContract = new Contract(REGISTRY_CONTRACT_ID);
+
+      const regTx = new TransactionBuilder(account4, { fee: '100000' })
+        .addOperation(
+          registryContract.call(
+            'register_agent',
+            new Address(publicKey).toScVal(),
+            new Address(contractAddress).toScVal()
+          )
+        )
+        .setTimeout(TimeoutInfinite)
+        .setNetworkPassphrase(NETWORK_PASSPHRASE)
+        .build();
+
+      const regSim = await server.simulateTransaction(regTx);
+      if (!rpc.Api.isSimulationError(regSim)) {
+        const preparedRegTx = await server.prepareTransaction(regTx);
+        const signedRegTx = await signTransaction(preparedRegTx);
+        await server.sendTransaction(signedRegTx);
+        console.log('✅ Agent registered in on-chain registry');
+      } else {
+        console.warn('⚠️  Registry registration simulation failed (non-fatal):', regSim.error);
+      }
+    } catch (err) {
+      // Non-fatal — agent still works without registry entry
+      console.warn('⚠️  Could not register in on-chain registry (non-fatal):', err);
+    }
+  }
+
   // Log the contract ID clearly for manual keeper update
   console.log('=== AGENT DEPLOYED SUCCESSFULLY ===');
   console.log('Contract ID:', contractAddress);
@@ -282,7 +340,7 @@ export async function createAgent(params: {
   console.log('Interval:', params.intervalSeconds, 'seconds');
   console.log('===================================');
 
-  // Register the agent in the production registry
+  // Register the agent in the keeper's off-chain registry (backup)
   registerAgent({
     contractId: contractAddress,
     owner: publicKey,
