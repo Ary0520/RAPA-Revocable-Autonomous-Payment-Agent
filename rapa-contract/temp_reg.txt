@@ -1,0 +1,11 @@
+﻿stellar : Γä╣∩╕Å Using wasm hash 
+aad94f0f22a10d8aab8e733614ce4c14f4b20e29870e6f7232929df6a8a8bd9e
+At line:1 char:99
++ ... contract" ; stellar contract deploy --wasm target\wasm32v1-none\relea ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Γä╣∩╕Å Using wa...2929df6a8a8bd9e: 
+   String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Γ£à Transaction built!
+AAAAAgAAAACF9l0aYiZ0vCmxV23n526W4KeGmqe/iIFTmN1JOs1hqgAAAGQDv+bYAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAAYAAAAAQAAAAAAAAAAAAAAAIX2XRpiJnS8KbFXbefnbpbgp4aap7+IgVOY3Uk6zWGqLS4ncu7wVpjjQfSO7u4zAaRMUMAoKckcd5k0iP0UQegAAAAAqtlPDyKhDYqrjnM2FM5MFPSyDimHDm9yMpKd9qiovZ4AAAAAAAAAAAAAAAA=

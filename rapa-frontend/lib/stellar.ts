@@ -15,7 +15,7 @@ import { registerAgent } from './agent-registry';
 
 // ── Network Configuration ────────────────────────────────────────────────────
 // Switch NETWORK to 'mainnet' and fill in the IDs after running deploy.sh
-const NETWORK: 'testnet' | 'mainnet' = 'testnet';
+const NETWORK: 'testnet' | 'mainnet' = 'mainnet';
 
 const RPC_URL =
   NETWORK === 'mainnet'
@@ -26,7 +26,7 @@ const NETWORK_PASSPHRASE =
   NETWORK === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET;
 
 // rapa-agent WASM hash — shared across all agent instances
-const WASM_HASH = '1c209fac1a53075bbcb793fe7004109c481981aa98174661d7840ffad6076bed';
+const WASM_HASH = '4d3e47757eeb0f854c8e91e9644fb619e379a73cba784c63c6c3370d1f5d9493';
 
 // rapa-registry singleton — tracks all deployed agent contract IDs on-chain
 // Fill in after deploying with deploy.sh
