@@ -238,9 +238,10 @@ export function AgentList() {
           >
             {/* Card header */}
             <div style={{
-              padding: '16px 18px',
+              padding: '14px 16px',
               borderBottom: '1px solid var(--border-subtle)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: '10px', flexWrap: 'wrap',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span className={status.cls}>{status.text}</span>
@@ -263,12 +264,15 @@ export function AgentList() {
             </div>
 
             {/* Stats row */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-              padding: '16px 18px',
-              gap: '12px',
-              borderBottom: '1px solid var(--border-subtle)',
-            }}>
+            <div
+              className="grid-4col"
+              style={{
+                display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+                padding: '16px 18px',
+                gap: '12px',
+                borderBottom: '1px solid var(--border-subtle)',
+              }}
+            >
               <StatCell label="Max Amount" value={`${formatAmount(agent.maxAmount)} XLM`} accent />
               <StatCell label="Interval" value={formatInterval(agent.interval)} />
               <StatCell
@@ -295,11 +299,14 @@ export function AgentList() {
             </div>
 
             {/* Action buttons */}
-            <div style={{
-              padding: '12px 18px',
-              borderTop: '1px solid var(--border-subtle)',
-              display: 'flex', gap: '10px',
-            }}>
+            <div
+              className="agent-actions"
+              style={{
+                padding: '12px 18px',
+                borderTop: '1px solid var(--border-subtle)',
+                display: 'flex', gap: '10px',
+              }}
+            >
               <button
                 className="btn-secondary"
                 style={{ flex: 1, padding: '8px', fontSize: '12.5px', justifyContent: 'center' }}

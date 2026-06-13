@@ -61,6 +61,8 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
@@ -71,6 +73,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
 }
 
 code, .font-mono {
@@ -470,4 +474,71 @@ select.input-field option {
   border-radius: var(--r-md);
   color: #fde68a;
   font-size: 14px;
+}
+
+/* =============================================
+   RESPONSIVE UTILITIES
+   ============================================= */
+
+/* Show/hide helpers */
+@media (min-width: 768px) {
+  .mobile-only  { display: none !important; }
+  .desktop-nav  { display: flex !important; }
+  .mobile-menu-btn { display: none !important; }
+}
+
+@media (max-width: 767px) {
+  .desktop-only { display: none !important; }
+  .desktop-nav  { display: none !important; }
+  .mobile-menu-btn { display: flex !important; }
+
+  /* Tighter horizontal padding on small screens */
+  .section-pad {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Stack 2-col grids to 1 col on mobile */
+  .grid-2col {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 4-col stat grids → 2×2 on mobile */
+  .grid-4col {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Agent card action buttons stack */
+  .agent-actions {
+    flex-direction: column !important;
+  }
+
+  /* Wallet dropdown full-width on mobile */
+  .wallet-dropdown {
+    right: auto !important;
+    left: 0 !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 340px !important;
+  }
+
+  /* Hero pills wrap naturally */
+  .hero-pills {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+
+  /* Dashboard tab panel full width */
+  .dashboard-panel {
+    padding: 20px !important;
+  }
+}
+
+/* Prevent any element from overflowing horizontally */
+img, svg, video, canvas, audio, iframe, embed, object {
+  max-width: 100%;
+}
+
+/* Catch-all: no element should cause horizontal scroll */
+* {
+  min-width: 0;
 }

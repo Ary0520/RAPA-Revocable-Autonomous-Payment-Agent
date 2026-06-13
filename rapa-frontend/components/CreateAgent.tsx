@@ -228,7 +228,8 @@ export function CreateAgent() {
           />
         </FormField>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}
+             className="grid-2col">
           <FormField label="Max Per Payment (XLM) *" hint="Ceiling per individual payment">
             <input
               type="number"
@@ -258,7 +259,8 @@ export function CreateAgent() {
           </FormField>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}
+             className="grid-2col">
           <FormField label="Payment Interval" hint="Minimum time between executions">
             <select name="intervalHours" value={formData.intervalHours} onChange={handleChange} className="input-field">
               {INTERVAL_OPTIONS.map((o) => (

@@ -67,17 +67,17 @@ export function ConnectButton({ label = 'Connect Wallet', className = '' }: Conn
 
       {showOptions && !isConnecting && (
         <div
-          className="animate-fadeInUp"
+          className="animate-fadeInUp wallet-dropdown"
           style={{
-            position: 'absolute',
-            top: 'calc(100% + 10px)',
-            right: 0,
-            width: '320px',
+            position: 'fixed',
+            top: 'auto',
+            right: '16px',
+            width: 'min(320px, calc(100vw - 32px))',
             background: 'var(--bg-card)',
             border: '1px solid var(--border-active)',
             borderRadius: 'var(--r-lg)',
             boxShadow: '0 24px 48px rgba(0,0,0,0.5), var(--glow-sm)',
-            zIndex: 100,
+            zIndex: 200,
             overflow: 'hidden',
           }}
         >

@@ -24,12 +24,11 @@ export function Header() {
         zIndex: 50,
       }}
     >
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '60px' }}>
 
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {/* Icon mark */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             <div style={{
               width: '30px', height: '30px',
               background: 'linear-gradient(135deg, #4d9eff, #818cf8)',
@@ -52,9 +51,8 @@ export function Header() {
             </div>
           </div>
 
-          {/* Nav — desktop */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-               className="hidden md:flex">
+          {/* Nav — desktop only */}
+          <nav className="desktop-nav" style={{ alignItems: 'center', gap: '4px' }}>
             {navLinks.map((link) => (
               <a
                 key={link.label}
@@ -84,19 +82,21 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Right — wallet + testnet pill */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {/* Testnet badge */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '5px 12px',
-              borderRadius: 'var(--r-pill)',
-              background: 'rgba(52,211,153,0.08)',
-              border: '1px solid rgba(52,211,153,0.18)',
-              fontSize: '11.5px', fontWeight: 600,
-              color: 'var(--accent-green)',
-              letterSpacing: '0.02em',
-            }}>
+          {/* Right side */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Testnet badge — hidden on very small screens */}
+            <div
+              className="desktop-only"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '5px 12px',
+                borderRadius: 'var(--r-pill)',
+                background: 'rgba(52,211,153,0.08)',
+                border: '1px solid rgba(52,211,153,0.18)',
+                fontSize: '11.5px', fontWeight: 600,
+                color: 'var(--accent-green)',
+                letterSpacing: '0.02em',
+              }}>
               <span style={{
                 width: '6px', height: '6px', borderRadius: '50%',
                 background: 'var(--accent-green)',
@@ -113,16 +113,18 @@ export function Header() {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label="Toggle menu"
+              className="mobile-menu-btn"
               style={{
-                display: 'none',
+                alignItems: 'center',
+                justifyContent: 'center',
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border-primary)',
                 borderRadius: 'var(--r-md)',
                 padding: '8px',
                 cursor: 'pointer',
                 color: 'var(--text-secondary)',
+                flexShrink: 0,
               }}
-              className="md:hidden-btn"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 {isMenuOpen ? (
@@ -142,12 +144,29 @@ export function Header() {
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile menu dropdown */}
         {isMenuOpen && (
           <div style={{
             borderTop: '1px solid var(--border-subtle)',
-            padding: '12px 0 16px',
+            padding: '8px 0 12px',
           }}>
+            {/* Testnet badge in mobile menu */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 12px',
+              marginBottom: '4px',
+            }}>
+              <span style={{
+                width: '6px', height: '6px', borderRadius: '50%',
+                background: 'var(--accent-green)',
+                boxShadow: '0 0 6px var(--accent-green)',
+                display: 'inline-block',
+                animation: 'pulse-dot 2s infinite',
+              }} />
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent-green)', letterSpacing: '0.02em' }}>
+                Stellar Testnet
+              </span>
+            </div>
             <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {navLinks.map((link) => (
                 <a
@@ -157,13 +176,14 @@ export function Header() {
                   rel={link.external ? 'noopener noreferrer' : undefined}
                   onClick={() => setIsMenuOpen(false)}
                   style={{
-                    fontSize: '14px',
+                    fontSize: '15px',
                     fontWeight: 500,
                     color: 'var(--text-secondary)',
-                    padding: '10px 12px',
+                    padding: '11px 12px',
                     borderRadius: 'var(--r-md)',
                     textDecoration: 'none',
                     transition: 'all 0.2s',
+                    display: 'block',
                   }}
                 >
                   {link.label}

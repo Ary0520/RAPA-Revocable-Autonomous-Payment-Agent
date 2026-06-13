@@ -57,7 +57,7 @@ export default function Home() {
       {/* Footer */}
       <footer style={{
         borderTop: '1px solid var(--border-subtle)',
-        padding: '28px 24px',
+        padding: '24px 16px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',

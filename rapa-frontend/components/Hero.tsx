@@ -61,9 +61,10 @@ export function Hero() {
       ref={ref}
       style={{
         position: 'relative',
-        paddingTop: '130px',
-        paddingBottom: '100px',
+        paddingTop: 'clamp(100px, 15vw, 130px)',
+        paddingBottom: 'clamp(60px, 10vw, 100px)',
         overflow: 'hidden',
+        maxWidth: '100%',
       }}
     >
       {/* Grid background */}
@@ -99,13 +100,15 @@ export function Hero() {
         pointerEvents: 'none',
       }} />
 
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px', position: 'relative' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 16px', position: 'relative' }}>
 
         {/* Top pills */}
         <div
+          className="hero-pills"
           style={{
-            display: 'flex', justifyContent: 'center', gap: '10px',
-            marginBottom: '48px',
+            display: 'flex', justifyContent: 'center', gap: '8px',
+            flexWrap: 'wrap',
+            marginBottom: '40px',
             opacity: visible ? 1 : 0,
             transform: visible ? 'none' : 'translateY(12px)',
             transition: 'all 0.5s cubic-bezier(0.16,1,0.3,1)',
@@ -194,7 +197,7 @@ export function Hero() {
         <div
           style={{
             display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center',
-            marginBottom: '80px',
+            marginBottom: 'clamp(48px, 8vw, 80px)',
             opacity: visible ? 1 : 0,
             transform: visible ? 'none' : 'translateY(14px)',
             transition: 'all 0.6s cubic-bezier(0.16,1,0.3,1) 0.24s',
@@ -227,8 +230,9 @@ export function Hero() {
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
+            width: '100%',
             maxWidth: '560px',
-            margin: '0 auto 80px',
+            margin: '0 auto clamp(48px, 8vw, 80px)',
             borderRadius: 'var(--r-lg)',
             border: '1px solid var(--border-primary)',
             background: 'rgba(255,255,255,0.02)',
@@ -242,15 +246,15 @@ export function Hero() {
             <div
               key={stat.label}
               style={{
-                padding: '20px 16px',
+                padding: 'clamp(12px, 3vw, 20px) clamp(8px, 2vw, 16px)',
                 textAlign: 'center',
                 borderRight: i < STATS.length - 1 ? '1px solid var(--border-primary)' : 'none',
               }}
             >
-              <div style={{ fontSize: '26px', fontWeight: 800, letterSpacing: '-0.02em' }} className="text-gradient">
+              <div style={{ fontSize: 'clamp(18px, 5vw, 26px)', fontWeight: 800, letterSpacing: '-0.02em' }} className="text-gradient">
                 {stat.value}
               </div>
-              <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: 'clamp(9px, 2vw, 11.5px)', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {stat.label}
               </div>
             </div>

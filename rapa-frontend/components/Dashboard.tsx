@@ -89,15 +89,16 @@ export function Dashboard() {
     <section
       id="dashboard"
       style={{
-        padding: '100px 24px',
+        padding: 'clamp(60px, 10vw, 100px) 16px',
         position: 'relative',
+        overflow: 'hidden',
       }}
     >
       {/* Top gradient line */}
       <div style={{
         position: 'absolute', top: 0, left: '50%',
         transform: 'translateX(-50%)',
-        width: '600px', height: '1px',
+        width: 'min(600px, 100%)', height: '1px',
         background: 'linear-gradient(90deg, transparent, rgba(77,158,255,0.3), transparent)',
       }} />
 
@@ -181,9 +182,11 @@ export function Dashboard() {
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border-primary)',
                 borderRadius: 'var(--r-xl)',
-                padding: '32px',
+                padding: 'clamp(20px, 4vw, 32px)',
                 boxShadow: 'var(--shadow-card)',
-              }}>
+              }}
+              className="dashboard-panel"
+              >
                 <div style={{ marginBottom: '28px', paddingBottom: '24px', borderBottom: '1px solid var(--border-subtle)' }}>
                   <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
                     Deploy New Agent
@@ -203,9 +206,11 @@ export function Dashboard() {
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border-primary)',
                 borderRadius: 'var(--r-xl)',
-                padding: '32px',
+                padding: 'clamp(20px, 4vw, 32px)',
                 boxShadow: 'var(--shadow-card)',
-              }}>
+              }}
+              className="dashboard-panel"
+              >
                 <div style={{ marginBottom: '28px', paddingBottom: '24px', borderBottom: '1px solid var(--border-subtle)' }}>
                   <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
                     Active Agents
