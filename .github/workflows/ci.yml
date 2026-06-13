@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Soroban contract tests ────────────────────────────────────────────────
+  contract-tests:
+    name: Contract Tests (Rust / Soroban)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32v1-none
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rapa-contract/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rapa-contract/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Run contract tests
+        working-directory: rapa-contract
+        run: cargo test --package rapa-agent -- --test-output immediate
+
+  # ── Frontend build ────────────────────────────────────────────────────────
+  frontend-build:
+    name: Frontend Build (Next.js)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: rapa-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: rapa-frontend
+        run: npm ci
+
+      - name: Type check
+        working-directory: rapa-frontend
+        run: npx tsc --noEmit
+
+      - name: Build
+        working-directory: rapa-frontend
+        run: npm run build
