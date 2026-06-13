@@ -15,12 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
+      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32v1-none
 
-      - name: Cache cargo registry
+      - name: Cache cargo
         uses: actions/cache@v4
         with:
           path: |
@@ -32,7 +30,7 @@ jobs:
 
       - name: Run contract tests
         working-directory: rapa-contract
-        run: cargo test --package rapa-agent -- --test-output immediate
+        run: cargo test --package rapa-agent
 
   # ── Frontend build ────────────────────────────────────────────────────────
   frontend-build:
@@ -42,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
