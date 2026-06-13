@@ -18,6 +18,8 @@ UI Responsiveness Screenshots:
 <img width="296" height="658" alt="image" src="https://github.com/user-attachments/assets/e97b8585-a7fc-4a20-a6df-bf0aa99d4a89" />
 
 
+DEMO VIDEO LINK: https://youtu.be/Mk6lX7ud0nY?si=8qn0gfAF_6w4y6cL
+
 ## 📁 Project Structure
 
 ```
