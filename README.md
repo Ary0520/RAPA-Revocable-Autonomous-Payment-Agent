@@ -2,7 +2,7 @@
 
 A decentralized platform for creating autonomous payment agents on Stellar blockchain.
 
-![image](https://github.com/user-attachments/assets/829d7642-f278-4f13-9e87-8e217628eff6)
+MAINNET ADDRESS: CAND44ZK74KTWM3BJ73MJZ55QJ6ELSXSG6ECN3XSEBKQ4GGJ65A6FG63
 
 ## 📁 Project Structure
 
