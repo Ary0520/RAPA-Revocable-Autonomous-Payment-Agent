@@ -4,6 +4,10 @@ A decentralized platform for creating autonomous payment agents on Stellar block
 
 MAINNET ADDRESS: CAND44ZK74KTWM3BJ73MJZ55QJ6ELSXSG6ECN3XSEBKQ4GGJ65A6FG63
 
+CI/CD screenshot:
+<img width="1902" height="425" alt="image" src="https://github.com/user-attachments/assets/4be90c5c-d6eb-4d6a-a60d-e39103418296" />
+
+
 ## 📁 Project Structure
 
 ```
